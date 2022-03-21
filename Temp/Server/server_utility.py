@@ -5,7 +5,7 @@ CUSTOMERS = [] # All the customers available on the server
 
 def start_server():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    host = socket.gethostname(socket.gethostbyname())
+    host = socket.gethostbyname(socket.gethostname())
     port = int(input('Enter port to run the server on --> '))
     s.bind((host,port))
     s.listen(100)
@@ -39,9 +39,20 @@ def handle_clients(conn, addr, msg_from_client):
             break
         if dtype == 'FIELD_AGENT' and msg_recieved != '':
             customer_username, msg_for_customer = msg_recieved[0], msg_recieved[1]
-        
+            current_agent = None
+            for agent in FIELD_AGENTS:
+                if agent.conn == conn:
+                    current_agent = agent
+                    break
+            if not current_agent:
+                for customer in current_agent.customer_connections:
+                    if customer.username == customer_username:
+                        customer.conn.send(msg_for_customer.encode())
         elif msg_recieved != '':
-            pass
+            field_username, msg_for_agent = msg_recieved[0], msg_recieved[1]
+            for customer in CUSTOMERS:
+                if customer.agent_connection.username == field_username:
+                    customer.agent_connection.send(msg_for_agent.encode())
 
 def create_connections():
     field_index = 0

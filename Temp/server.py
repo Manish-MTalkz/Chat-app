@@ -40,7 +40,7 @@ class Server:
                     self.__customers.remove(conn)
                 else:
                     self.__fieldAgents.remove(conn)
-                break
+                    break
             if msg.decode() != '':
                 msg = msg.decode()
                 print(msg)

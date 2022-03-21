@@ -8,17 +8,17 @@ class FIELD_AGENT:
         global FIELD_AGENT_ID
         self.id = FIELD_AGENT_ID
         FIELD_AGENT_ID += 1
-        self.__customer_connections = []
+        self.customer_connections = []
         self.is_active = True
 
     def total_connections(self):
-        return len(self.__customer_connections)
+        return len(self.customer_connections)
 
     def add_customer(self, customer):
-        self.__customer_connections.append(customer)
+        self.customer_connections.append(customer)
 
     def send_msg_to_customer(self, username, msg):
-        for customer in self.__customer_connections:
+        for customer in self.customer_connections:
             if customer.username == username:
                 connection = customer.conn
                 connection.send(msg)
@@ -31,10 +31,13 @@ class CUSTOMER:
         global CUSTOMER_ID
         self.id = CUSTOMER_ID
         CUSTOMER_ID += 1
-        self.__agent_connection = None
+        self.agent_connection = None
 
     def is_connected(self):
-        return self.__agent_connection != None
+        return self.agent_connection != None
 
     def connect_agent(self, agent):
-        self.__agent_connection = agent
+        self.agent_connection = agent
+
+    def send_msg_to_agent(self, username, msg):
+        self.agent_connection.conn.send(msg.encode())
