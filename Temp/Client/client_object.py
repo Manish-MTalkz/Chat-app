@@ -8,7 +8,7 @@ class FIELD_AGENT:
         self.user_name = input('Enter the User Name of Field Agent: ')
         self.password = input('Enter the Password: ')
         self.is_available = True
-        self.type = 'FIELD AGENT'
+        self.type = 'FIELD_AGENT'
         global field_agent_count
         self.id = field_agent_count
         field_agent_count += 1

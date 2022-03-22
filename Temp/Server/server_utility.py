@@ -15,21 +15,27 @@ def start_server():
     while True:
         conn, addr = s.accept()
         msg_from_client = conn.recv(1024).decode()
+        print(msg_from_client)
         client_handler = threading.Thread(target = handle_clients, args = (conn, addr, msg_from_client))
         client_handler.start()
 
 def handle_clients(conn, addr, msg_from_client):
     dtype, username = msg_from_client.split()[0], msg_from_client.split()[1]
+    print(username + ' has joined the server as a ' + dtype.lower())
     if dtype == 'FIELD_AGENT':
         field_agent = FIELD_AGENT(username, conn)
         FIELD_AGENTS.append(field_agent)
     else:
         customer = CUSTOMER(username, conn)
         CUSTOMERS.append(customer)
-    create_connections()
+        isconnected = create_connections()
+        if isconnected is False:
+            print('No agent is present right now')
+            exit()
     while True:
         try:
             msg_recieved = conn.recv(1024).decode()
+            print(msg_recieved)
         except:
             conn.shutdown(socket.SHUT_RDWR)
             if dtype == 'FIELD_AGENT':
@@ -52,16 +58,21 @@ def handle_clients(conn, addr, msg_from_client):
             field_username, msg_for_agent = msg_recieved[0], msg_recieved[1]
             for customer in CUSTOMERS:
                 if customer.agent_connection.username == field_username:
-                    customer.agent_connection.send(msg_for_agent.encode())
+                    customer.agent_connection.conn.send(msg_for_agent.encode())
 
 def create_connections():
-    field_index = 0
+    field_index = -1
+    isconnected = False
     for index in range(len(FIELD_AGENTS)):
-        if (FIELD_AGENTS[index].total_connections() < FIELD_AGENTS[field_index].total_connections() 
+        if (field_index == -1) or (FIELD_AGENTS[index].total_connections() < FIELD_AGENTS[field_index].total_connections() 
             and FIELD_AGENTS[index].is_active is True):
             field_index = index
-    for index in range(len(CUSTOMERS)):
-        if CUSTOMERS[index].is_connected() is False:
-            CUSTOMERS[index].connect_agent(FIELD_AGENTS[field_index])
-            FIELD_AGENTS[field_index].add_customer(CUSTOMERS[index])
-            break
+    if field_index != -1:
+        for index in range(len(CUSTOMERS)):
+            if CUSTOMERS[index].is_connected() is False:
+                CUSTOMERS[index].connect_agent(FIELD_AGENTS[field_index])
+                FIELD_AGENTS[field_index].add_customer(CUSTOMERS[index])
+                CUSTOMERS[index].is_connected = True
+                isconnected = True
+                break
+    return isconnected
