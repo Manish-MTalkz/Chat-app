@@ -1,4 +1,58 @@
-from client_utility import *
+# Client Side Code for the chat app
+# Importing the Libraries
+import socket    # socket library is for creating sockets of client and server, connecting with each other
+import threading # threading library is for creating threads of the various functions in the server and client
+import psycopg2  # psycopg2 library is for creating the connection between the client and database for the authentication
+
+#<------------------------------------- Classes for Customer and Field Agent ---------------------------------------->#
+
+# Creating a class customer for all its features and functionalities
+class customer:
+    def __init__(self, username):
+        self.username = username
+        self.type = 'customer'
+
+# Creating a class field_agent for all its features and functionalities
+class field_agent:
+    def __init__(self, username):
+        self.username = username
+        self.type = 'field_agent'
+
+#<------------------------------------------------- Utility Functions ----------------------------------------------->#
+
+# Creating an instance of the customer class
+def create_customer_object():
+    username = input('Please enter your name: ')
+    new_customer = customer(username)
+    print(username + ' has been connected as ' + new_customer.type)
+    return new_customer
+
+# Creating an instance of the field_agent class and saving username and password in the database
+def create_field_agent_object(username, password):
+    new_field_agent = field_agent(username)     # Creating an instance of field_agent 
+    print(username + ' has been connected as ' + new_field_agent.type)
+    return new_field_agent                      # Returning the instance of field_agent
+
+# Creating the database connection for the client for the authentication
+def create_database_connection():
+    # Creating a connection object to connect with database
+    database_connector = psycopg2.connect(database = 'mtalkz', user = 'postgres', password = '123456', 
+                                            host = '127.0.0.1', port = 5432)
+    return database_connector   # Returning the connector
+
+# Authentication of the field agent in the database
+def authenticate(username, password):
+    database_connector = create_database_connection() # Getting the connector for the database connection
+    cursor = database_connector.cursor()
+    # Executing SQL statement
+    cursor.execute('SELECT * FROM auth_table where username = %s',(username,))
+    data = cursor.fetchone()
+    if data[0] == username and data[1] == password:
+        return True
+    else:
+        return False
+
+#<------------------------------------------------ Important Functions ---------------------------------------------->#
 
 # Saving the username and password in the database
 def save_to_the_database(username, password):
@@ -40,10 +94,10 @@ def menu_for_field_agent():
         print('Wrong choice entered. Please try it again.')
 
 """ 
-    main_menu() function is for creating the menu for the client whether 
+    display() function is for creating the menu for the client whether 
     the client is customer or the field agent.
 """
-def main_menu():
+def display():
     print('<----- Main Menu ----->')
     print('1. Customer')
     print('2. Field Agent')
@@ -68,11 +122,11 @@ def main_menu():
 def create_connection_to_the_server(class_object):
     # Creating an instance of the socket for the connecting the client with server
     server_connector = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    host = '127.0..1.1'     # Host of the Server on which it is running
+    host = '127.0.1.1'                                          # Host of the Server on which it is running
     while True:
         try:
-            port = int(input('Please enter the socket no: ')) # Taking port no as input
-            server_connector.bind((host,port))  # Binding the host and port together
+            port = int(input('Please enter the socket no: '))   # Taking port no as input
+            server_connector.connect((host,port))               # Sending connecting request to the server
             break        
         except:     # In case, the connector is not able to bind host with port
             print('There is some problem in connecting the server, please try again.')
@@ -102,3 +156,5 @@ def handle_input(connector):
     msg_from_server = connector.recv(1024)  # Recieving the message from the server   
     decoded_msg = msg_from_server.decode()  # Decoding the message
     print(decoded_msg)                      # Printing the decoded the message
+
+display()

@@ -1,51 +1,33 @@
-from client_libraries import *
-FIELD_AGENTS = [] # Keeping the records of the FIELD AGENTS connected to the server.
-CUSTOMERS = [] # Keeping the record for the CUSTOMERS connected to the server.
+from client_libraries import*
 
-# Searching for the Agent for the available Field Agents
-def search(username,password):
-    for agent in FIELD_AGENTS:
-        if agent.user_name == username and agent.password == password:
-            return agent
-    return None
+# Creating an instance of the customer class
+def create_customer_object():
+    username = input('Please enter your name: ')
+    new_customer = customer(username)
+    print(username + ' has been connected as ' + new_customer.type)
+    return new_customer
 
-# Searching for the Agent using id with the help of binary search
-def searchByID(id):
-    start = 0; end = len(FIELD_AGENTS)-1
-    while start <= end:
-        mid = start+(end-start)//2
-        if FIELD_AGENTS[mid].id == id:
-            return mid
-        elif FIELD_AGENTS[mid].id < id:
-            start = mid+1
-        else:
-            end = mid-1
-    return -1
+# Creating an instance of the field_agent class and saving username and password in the database
+def create_field_agent_object(username, password):
+    new_field_agent = field_agent(username)     # Creating an instance of field_agent 
+    print(username + ' has been connected as ' + new_field_agent.type)
+    return new_field_agent                      # Returning the instance of field_agent
 
-# Creating connection with the server with the help of the socket library
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-def create_connection(client):
-    while True:
-        try:
-            host = input('Enter the host name --> ')
-            port = int(input('Enter the port no --> '))
-            s.connect((host,port))
-            break
-        except:
-            print('Could not connect the server, please try again.')
-            exit()
-    s.send((str(client.type) + ' ' + str(client.user_name)).encode())
-    message_handler = threading.Thread(target = handle_message, args = ())
-    message_handler.start()
-    input_handler = threading.Thread(target = handle_input, args = ())
-    input_handler.start()
+# Creating the database connection for the client for the authentication
+def create_database_connection():
+    # Creating a connection object to connect with database
+    database_connector = psycopg2.connect(database = 'mtalkz', user = 'postgres', password = '123456', 
+                                            host = '127.0.0.1', port = 5432)
+    return database_connector   # Returning the connector
 
-# Recieving the messages from the server
-def handle_message():
-    while True:
-        print(s.recv(1024).decode())
-
-# Send the messages to the server
-def handle_input():
-    while True:
-        s.send(input().encode())
+# Authentication of the field agent in the database
+def authenticate(username, password):
+    database_connector = create_database_connection() # Getting the connector for the database connection
+    cursor = database_connector.cursor()
+    # Executing SQL statement
+    cursor.execute('SELECT * FROM auth_table where username = %s',(username,))
+    data = cursor.fetchone()
+    if data[0] == username and data[1] == password:
+        return True
+    else:
+        return False
