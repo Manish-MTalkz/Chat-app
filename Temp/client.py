@@ -132,7 +132,7 @@ def create_connection_to_the_server(class_object):
             print('There is some problem in connecting the server, please try again.')
     
     # Sending a message
-    message_from_client = 'Plesae accept ' + class_object.username + ' as ' + class_object.type
+    message_from_client = 'Please accept ' + class_object.username + ' as ' + class_object.type
     server_connector.send(message_from_client.encode())
 
     create_threads(server_connector)    # Creating Threads for functions
@@ -147,14 +147,16 @@ def create_threads(connector):
 
 # Creating a function for sending the messages to the server
 def handle_messages(connector):
-    msg_to_server = input()                 # Recieving the message from the client
-    encoded_msg = msg_to_server.encode()    # Encoding is used to send the message in bits
-    connector.send(encoded_msg)             # Sending messsage to the server
+    while True:
+        msg_to_server = input()                 # Recieving the message from the client
+        encoded_msg = msg_to_server.encode()    # Encoding is used to send the message in bits
+        connector.send(encoded_msg)             # Sending messsage to the server
 
 # Create a function for accepting the messages from the server
 def handle_input(connector):
-    msg_from_server = connector.recv(1024)  # Recieving the message from the server   
-    decoded_msg = msg_from_server.decode()  # Decoding the message
-    print(decoded_msg)                      # Printing the decoded the message
+    while True:
+        msg_from_server = connector.recv(1024)  # Recieving the message from the server   
+        decoded_msg = msg_from_server.decode()  # Decoding the message
+        print(decoded_msg)                      # Printing the decoded the message
 
 display()

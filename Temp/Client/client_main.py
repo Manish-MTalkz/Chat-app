@@ -68,17 +68,17 @@ def main_menu():
 def create_connection_to_the_server(class_object):
     # Creating an instance of the socket for the connecting the client with server
     server_connector = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    host = '127.0..1.1'     # Host of the Server on which it is running
+    host = '127.0.1.1'                                          # Host of the Server on which it is running
     while True:
         try:
-            port = int(input('Please enter the socket no: ')) # Taking port no as input
-            server_connector.bind((host,port))  # Binding the host and port together
+            port = int(input('Please enter the socket no: '))   # Taking port no as input
+            server_connector.connect((host,port))               # Sending connecting request to the server
             break        
         except:     # In case, the connector is not able to bind host with port
             print('There is some problem in connecting the server, please try again.')
     
     # Sending a message
-    message_from_client = 'Plesae accept ' + class_object.username + ' as ' + class_object.type
+    message_from_client = 'Please accept ' + class_object.username + ' as ' + class_object.type
     server_connector.send(message_from_client.encode())
 
     create_threads(server_connector)    # Creating Threads for functions

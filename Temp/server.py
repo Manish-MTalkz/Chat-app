@@ -53,8 +53,8 @@ def start_server():
         msg_from_client_decoded = msg_from_client_encoded.decode()
         print(msg_from_client_decoded)
         useful_data = msg_from_client_decoded.split()       # Fetching useful data from the msg_from_client
-        username,type = useful_data[3],useful_data[-1]      # Getting username and its type from useful_data
-        add_client_to_the_database(username,type)           # Adding client to the database
+        username,type = useful_data[2],useful_data[-1]      # Getting username and its type from useful_data
+        # add_client_to_the_database(username,type)           # Adding client to the database
 
         if type == 'field_agent':
             new_agent = field_agent(username,connection)        # Creating a new instance for the field_agent class
@@ -64,7 +64,7 @@ def start_server():
                 username of the agent can be searched as per the connection object.
             """
             connection_with_field_agent[connection] = username  
-            print(new_agent.username + ' has joined the server as ' + new_agent.type)
+            print(username + ' has joined the server as ' + type)
             print('All the field agents available on the Server')
             print_all_names(field_agent_available)              # Printing username of all the field agents available
         else:
@@ -75,9 +75,10 @@ def start_server():
                 username of the customer can be searched as per the connection object.
             """
             connection_with_customer[connection] = username
-            print(new_customer.username + ' has joined the server as ' + new_customer.type)
+            print(username+ ' has joined the server as ' + type)
             print('All the customers available on the Server')
             print_all_names(customer_available)                 # Printing username of all the customers available
+            create_connection_btw_customer_n_field_agent()        # Creating connection between the customers and field agents
         
         # Creating a thread for handling the client
         client_handler = threading.Thread(target = handle_client, args = (connection,address,username,type))
@@ -86,7 +87,7 @@ def start_server():
 # Function to print the username of the field agent and customer available
 def print_all_names(object_array):
     for i in range(len(object_array)):
-        print(i+1, object_array[i].username)
+        print(str(i+1) + '.',object_array[i].username)
 
 # Creating the database connection for the server
 def create_database_connection():
@@ -105,17 +106,18 @@ def add_client_to_the_database(username, type):
 
 # Function for handling the client
 def handle_client(connection, address, username, type):
-    create_connection_btw_customer_n_field_agent()        # Creating connection between the customers and field agents
     while True:
         try:                                              
             msg_from_client_encoded = connection.recv(1024)              # Getting message from the client side in bits
             msg_from_client_decoded = msg_from_client_encoded.decode()   # Decoding the message into string
+            print('Message from client : ', msg_from_client_decoded)
         except:
             """
                 If Customer:- remove customer from customer_available list, connected_clients list.
                 If Field Agent:- remove field agent from field_agent_available list, 
                                  make connected_field_agent to None.
             """
+            print('No Message Recieved from client')
             return
 
         if type == 'field_agent':
@@ -125,10 +127,11 @@ def handle_client(connection, address, username, type):
                 So in order to get Username and Message seperately from msg_from_client_decode, we'll
                 use split() function.
             """
-            info_from_msg = msg_from_client_decoded.split('|')
+            info_from_msg = msg_from_client_decoded.split(',')
+            print(info_from_msg)
             customer_username, msg_for_customer = info_from_msg[0], info_from_msg[1]
             # Searching for the connection object of the customer with given username
-            customer_connector = get_connection_object_for_customer(customer_username)
+            customer_connector = get_connection_object_for_customer(username,customer_username)
             if customer_connector is not None:
                 """
                     After the getting connector of the customer, sending the message to the customer 
@@ -162,7 +165,7 @@ def send_message_to_field_agent(field_agent_connector, username, msg_for_field_a
     field_agent_connector.send(msg_to_be_send_encoded)  # Sending the message to the field agent
 
 # Searching for the connection object of the customer
-def get_connection_object_for_customer(username):
+def get_connection_object_for_customer(username,customer_username):
     """
         Logic:
                 Initially take connector object as None, so traverse through each field agent in the
@@ -172,10 +175,11 @@ def get_connection_object_for_customer(username):
     """
     customer_connector = None                            # Taking object as None initially
     for agent in field_agent_available:                  # Traversing through each agent in field_agent_available
-        for customer in agent.connected_customers:       # Traversing through each customer in agent.connector_customers
-            if customer.username == username:            # If yes, change the value of connector
-                customer_connector = customer.connection
-                break
+        if agent.username == username:
+            for customer in agent.connected_customers:       # Traversing through each customer in agent.connector_customers
+                if customer.username == customer_username:            # If yes, change the value of connector
+                    customer_connector = customer.connection
+                    break
         if customer_connector is not None:
             break
     return customer_connector                            # Returning the connector_object
@@ -191,7 +195,7 @@ def get_connection_object_for_field_agent(username):
     field_agent_connector = None                        # Taking object as None initially
     for customer in customer_available:                 # Traversing through each agent in customer_available
         if customer.username == username:               # If yes, change the value of connector
-            field_agent_connector = customer.field_agent_connected.connection
+            field_agent_connector = customer.connected_field_agent.connection
             break
     return field_agent_connector                        # Returning the connector_object
 
@@ -214,7 +218,7 @@ def create_connection_btw_customer_n_field_agent():
                     connected to them.
                 """
                 if ((free_field_agent_index is None) or 
-                    (len(field_agent_available[free_field_agent_index].connected_customers) < 
+                    (len(field_agent_available[free_field_agent_index].connected_customers) > 
                      len(field_agent_available[field_agent_index].connected_customers))):
                     free_field_agent_index = field_agent_index
             field_agent_available[free_field_agent_index].connected_customers.append(customer_available[customer_index])
