@@ -54,10 +54,9 @@ def start_server():
                 if is_connected is False:
                     msg = 'Agent not available, please try again later..'
                     connection.send(msg.encode())
-                    customer_available.remove(new_customer)
             
             # Creating a thread for handling the client
-            client_handler = threading.Thread(target = handle_client, args = (connection,address,username,type))
+            client_handler = threading.Thread(target = handle_client, args = (connection,address,username,type,is_connected))
             client_handler.start()
         except Exception as e:
             print("Exception:",e)

@@ -29,7 +29,7 @@ def add_client_to_the_database(username, type):
         print("Exception:",e)
 
 # Function for handling the client
-def handle_client(connection, address, username, type):
+def handle_client(connection, address, username, type, is_connected):
     while True:
         try:                                              
             msg_from_client_encoded = connection.recv(1024)              # Getting message from the client side in bits
@@ -68,9 +68,16 @@ def handle_client(connection, address, username, type):
                 Here msg_from_client_decoded for customer will be in the form of normal string. So we can
                 simply send to the corresponding field agent.
             """
-            field_agent_connector = get_connection_object_for_field_agent(username)
-            if field_agent_connector is not None:
-                send_message_to_field_agent(field_agent_connector,username,msg_from_client_decoded)
+            if is_connected:
+                field_agent_connector = get_connection_object_for_field_agent(username)
+                if field_agent_connector is not None:
+                    send_message_to_field_agent(field_agent_connector,username,msg_from_client_decoded)
+                else:
+                    msg_for_client = 'Agent is not available, please try again later.'
+                    connection.send(msg_for_client.encode())
+            else:
+                msg_for_client = 'Agent is not available, please try again later.'
+                connection.send(msg_for_client.encode())
 
 # Sending message to customer connected to corresponding field agent
 def send_message_to_customer(customer_connector, username, msg_for_customer):
