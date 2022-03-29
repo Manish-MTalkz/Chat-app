@@ -1,3 +1,5 @@
+#<------------------------------------- Class for Customer and Field Agent ----------------------------------------->#
+
 # Creating the class for the customer for all its features and handle its functionality
 class customer:
     def __init__(self, username, connection):
