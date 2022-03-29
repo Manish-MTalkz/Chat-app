@@ -23,13 +23,13 @@ def add_client_to_the_database(username, type):
     cursor = database_connector.cursor()
     try:
     # Executing the SQL command and inserting username and its type into the database
-        cursor.execute('INSERT INTO clients VALUES(%s,%s)', (username,type))   
+        cursor.execute('INSERT INTO clients(username, type) VALUES(%s,%s)', (username,type))   
         database_connector.commit()
     except Exception as e:
         print("Exception:",e)
 
 # Function for handling the client
-def handle_client(connection, address, username, type, is_connected):
+def handle_client(connection, address, username, type):
     while True:
         try:                                              
             msg_from_client_encoded = connection.recv(1024)              # Getting message from the client side in bits
@@ -68,16 +68,9 @@ def handle_client(connection, address, username, type, is_connected):
                 Here msg_from_client_decoded for customer will be in the form of normal string. So we can
                 simply send to the corresponding field agent.
             """
-            if is_connected:
-                field_agent_connector = get_connection_object_for_field_agent(username)
-                if field_agent_connector is not None:
-                    send_message_to_field_agent(field_agent_connector,username,msg_from_client_decoded)
-                else:
-                    msg_for_client = 'Agent is not available, please try again later.'
-                    connection.send(msg_for_client.encode())
-            else:
-                msg_for_client = 'Agent is not available, please try again later.'
-                connection.send(msg_for_client.encode())
+            field_agent_connector = get_connection_object_for_field_agent(username)
+            if field_agent_connector is not None:
+                send_message_to_field_agent(field_agent_connector,username,msg_from_client_decoded)
 
 # Sending message to customer connected to corresponding field agent
 def send_message_to_customer(customer_connector, username, msg_for_customer):
@@ -145,10 +138,6 @@ def create_connection_btw_customer_n_field_agent():
                 finding that field agent, we are appending the customer into the list of connected_customer of the 
                 field agent and initialising the field agent to connected_field_agent of the customer.
     """
-
-    # If no field agent is available in the field_agent_available list
-    if len(field_agent_available) == 0:
-        return False
     for customer_index in range(len(customer_available)):
         free_field_agent_index = None   # Initially assuming all the field agents has same no of customers
         # Connection only when the customer has no field agent connected to it
@@ -165,4 +154,3 @@ def create_connection_btw_customer_n_field_agent():
             field_agent_available[free_field_agent_index].connected_customers.append(customer_available[customer_index])
             customer_available[customer_index].connected_field_agent = field_agent_available[free_field_agent_index]
             print(customer_available[customer_index].username + ' has been connected to ' + field_agent_available[free_field_agent_index].username)
-        return True
