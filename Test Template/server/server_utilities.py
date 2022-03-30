@@ -22,11 +22,32 @@ def add_client_to_the_database(username, type):
     database_connector = create_database_connection()       # Getting connector object to connect with database
     cursor = database_connector.cursor()
     try:
-    # Executing the SQL command and inserting username and its type into the database
+        # Executing the SQL command and inserting username and its type into the database
         cursor.execute('INSERT INTO clients(username, type) VALUES(%s,%s)', (username,type))   
         database_connector.commit()
+        database_connector.close()
     except Exception as e:
-        print("Exception:",e)
+        print("Exception:", e)
+
+# Function for adding the messages and its details to the database
+def add_message_to_the_database(sender, reciever, message):
+    database_connector = create_database_connection()
+    cursor = database_connector.cursor()
+    try:
+        cursor.execute('INSERT INTO messages_from_clients(sender,reciever,msg) VALUES(%s,%s,%s)', (sender,reciever,message))
+        database_connector.commit()
+        database_connector.close()
+    except Exception as e:
+        print('Exception:', e)
+
+# Function to get the customer object
+def get_customer_object(username, connection):
+    customer_object = None
+    for customer in customer_available:
+        if customer.username == username and customer.connection == connection:
+            customer_object = customer
+            break
+    return customer_object
 
 # Function for handling the client
 def handle_client(connection, address, username, type):
@@ -54,6 +75,8 @@ def handle_client(connection, address, username, type):
             info_from_msg = msg_from_client_decoded.split(',')
             print(info_from_msg)
             customer_username, msg_for_customer = info_from_msg[0], info_from_msg[1]
+            # Adding the message send by the field agent to customer in database
+            add_message_to_the_database(username,customer_username,msg_for_customer)
             # Searching for the connection object of the customer with given username
             customer_connector = get_connection_object_for_customer(username,customer_username)
             if customer_connector is not None:
@@ -61,6 +84,7 @@ def handle_client(connection, address, username, type):
                     After the getting connector of the customer, sending the message to the customer 
                     in appropiate format. 
                 """
+
                 send_message_to_customer(customer_connector,username,msg_for_customer)
         else:
             # send msg to corresponding connected field agent having given username
@@ -68,7 +92,9 @@ def handle_client(connection, address, username, type):
                 Here msg_from_client_decoded for customer will be in the form of normal string. So we can
                 simply send to the corresponding field agent.
             """
+            customer_object = get_customer_object(username, connection)
             field_agent_connector = get_connection_object_for_field_agent(username)
+            add_message_to_the_database(username,customer_object.connected_field_agent.username,msg_from_client_decoded)
             if field_agent_connector is not None:
                 send_message_to_field_agent(field_agent_connector,username,msg_from_client_decoded)
 
