@@ -26,7 +26,7 @@ def start_server():
             print(msg_from_client_decoded)
             useful_data = msg_from_client_decoded.split()       # Fetching useful data from the msg_from_client
             username,type = useful_data[2],useful_data[-1]      # Getting username and its type from useful_data
-            add_client_to_the_database(username,type)           # Adding client to the database
+            # add_client_to_the_database(username,type)           # Adding client to the database
 
             if type == 'field_agent':
                 new_agent = field_agent(username,connection)        # Creating a new instance for the field_agent class

@@ -1,15 +1,21 @@
 from client_libraries import *
 
+def create_id():
+    return str(int(time.time()*100000))
+
 # Creating an instance of the customer class
 def create_customer_object():
+    id = create_id()
+    email = input('Please enter your email: ')
     username = input('Please enter your name: ')
-    new_customer = customer(username)
+    new_customer = customer(id,email,username)
     print(username + ' has been connected as ' + new_customer.type)
     return new_customer
 
 # Creating an instance of the field_agent class and saving username and password in the database
-def create_field_agent_object(username, password):
-    new_field_agent = field_agent(username)     # Creating an instance of field_agent 
+def create_field_agent_object(email, username, password):
+    id = create_id()
+    new_field_agent = field_agent(id, email, username, password)     # Creating an instance of field_agent 
     print(username + ' has been connected as ' + new_field_agent.type)
     return new_field_agent                      # Returning the instance of field_agent
 
@@ -21,14 +27,14 @@ def create_database_connection():
     return database_connector   # Returning the connector
 
 # Authentication of the field agent in the database
-def authenticate(username, password):
+def authenticate(email, username, password):
     database_connector = create_database_connection() # Getting the connector for the database connection
     cursor = database_connector.cursor()
     # Executing SQL statement
     try:
-        cursor.execute('SELECT * FROM auth_table where username = %s',(username,))
+        cursor.execute('SELECT * FROM field_agent_details where email = %s AND username = %s',(email,username))
         data = cursor.fetchone()
-        if data[0] == username and data[1] == password:
+        if data and data[-1] == password:
             return True
         else:
             return False
@@ -36,23 +42,37 @@ def authenticate(username, password):
         print("Exception:",e)
 
 # Saving the username and password in the database
-def save_to_the_database(username, password):
+def save_to_the_database(class_object):
     database_connector = create_database_connection() # Getting the connector for the database connection
     cursor = database_connector.cursor()
     # Executing SQL Command
-    try:
-        cursor.execute('INSERT INTO auth_table VALUES(%s, %s)', (username,password))
-        database_connector.commit()
-        print('Username and password has been saved to the database')
-    except Exception as e:
-        print("Exception:",e)
+    if class_object.type == 'field_agent':
+        try:
+            id = class_object.id; email = class_object.email; username = class_object.username
+            type = class_object.type; active = class_object.active; password = class_object.password
+            values = (id,email,username,type,active,password)
+            cursor.execute('INSERT INTO field_agent_details VALUES(%s,%s,%s,%s,%s,%s)', values)
+            database_connector.commit()
+            print('All the details of ' + class_object.type + ' have been saved')
+        except Exception as e:
+            print("Exception:",e)
+    else:
+        try:
+            id = class_object.id; email = class_object.email; username = class_object.username
+            type = class_object.type; active = class_object.active
+            values = (id,email,username,type,active)
+            cursor.execute('INSERT INTO customer_details VALUES(%s,%s,%s,%s,%s)', values)
+            database_connector.commit()
+            print('All the details of ' + class_object.type + ' have been saved.')
+        except Exception as e:
+            print('Exception:', e)
 
 # Login function for the field agent
-def login(username, password):
-    success = authenticate(username,password)
+def login(email, username, password):
+    success = authenticate(email,username,password)
     if success is True:
         print('Login Successful')
-        agent = create_field_agent_object(username,password)
+        agent = create_field_agent_object(email,username,password)
         create_connection_to_the_server(agent)
     else:
         print('Wrong username and password. Please try it again.')
