@@ -15,3 +15,11 @@ class field_agent:
         self.connection = connection        # Saving the connection object of field agent to get and recieve messages
         self.type = 'field_agent'           # Saving the type of the client
         self.connected_customers = []       # All customers connected to this field agent
+
+class message:
+    def __init__(self, id, sender_id, reciever_id, time, msg):
+        self.id = id                        # Saving id of the msg in the database
+        self.sender_id = sender_id          # Saving the id of the user who sent the message
+        self.reciever_id = reciever_id      # Saving the id of the user who recieved the message
+        self.time = time                    # Saving time at which message is recieved
+        self.msg = msg                      # Saving the message send by the user

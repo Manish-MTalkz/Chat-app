@@ -17,24 +17,52 @@ def create_database_connection():
                                             host = '127.0.0.1', port = 5432)
     return database_connector       # Returning the connector
 
-# Function for adding the client to the database of the server
-def add_client_to_the_database(username, type):
-    database_connector = create_database_connection()       # Getting connector object to connect with database
-    cursor = database_connector.cursor()
-    try:
-        # Executing the SQL command and inserting username and its type into the database
-        cursor.execute('INSERT INTO clients(username, type) VALUES(%s,%s)', (username,type))   
-        database_connector.commit()
-        database_connector.close()
-    except Exception as e:
-        print("Exception:", e)
+# # Function for adding the client to the database of the server
+# def add_client_to_the_database(username, type):
+#     database_connector = create_database_connection()       # Getting connector object to connect with database
+#     cursor = database_connector.cursor()
+#     try:
+#         # Executing the SQL command and inserting username and its type into the database
+#         cursor.execute('INSERT INTO clients(username, type) VALUES(%s,%s)', (username,type))   
+#         database_connector.commit()
+#         database_connector.close()
+#     except Exception as e:
+#         print("Exception:", e)
+
+def create_id():
+    return str(int(time.time()*100000))
+
+def get_field_agent_id(username):
+    database_connector = create_database_connection()
+    id = None
+    if database_connector:
+        try:
+            cursor = database_connector.cursor()
+            cursor.execute('SELECT id FROM field_agent_details where username = %s', (username,))
+            id = cursor.fetchone()[0]
+        except Exception as e:
+            print('Exception:', e)
+    return id
+
+
+def get_customer_id(username):
+    database_connector = create_database_connection()
+    id = None
+    if database_connector:
+        try:
+            cursor = database_connector.cursor()
+            cursor.execute('SELECT id FROM customer_details where username = %s', (username,))
+            id = cursor.fetchone()[0]
+        except Exception as e:
+            print('Exception:', e)
+    return id
 
 # Function for adding the messages and its details to the database
-def add_message_to_the_database(sender, reciever, message):
+def add_message_to_the_database(values):
     database_connector = create_database_connection()
     cursor = database_connector.cursor()
     try:
-        cursor.execute('INSERT INTO messages_from_clients(sender,reciever,msg) VALUES(%s,%s,%s)', (sender,reciever,message))
+        cursor.execute('INSERT INTO message_details VALUES(%s,%s,%s,%s,%s)',values)
         database_connector.commit()
         database_connector.close()
     except Exception as e:
@@ -65,6 +93,8 @@ def handle_client(connection, address, username, type):
             print('No Message Recieved from client')
             return
 
+        msg_id = create_id()
+        timestamp = int(time.time())
         if type == 'field_agent':
             # send msg to corresponding connected customer having given username
             """
@@ -75,8 +105,10 @@ def handle_client(connection, address, username, type):
             info_from_msg = msg_from_client_decoded.split(',')
             print(info_from_msg)
             customer_username, msg_for_customer = info_from_msg[0], info_from_msg[1]
+            sender_id = get_field_agent_id(username); reciever_id = get_customer_id(customer_username) 
+            values = (msg_id,sender_id,reciever_id,timestamp,msg_for_customer)
             # Adding the message send by the field agent to customer in database
-            add_message_to_the_database(username,customer_username,msg_for_customer)
+            add_message_to_the_database(values)
             # Searching for the connection object of the customer with given username
             customer_connector = get_connection_object_for_customer(username,customer_username)
             if customer_connector is not None:
@@ -94,7 +126,10 @@ def handle_client(connection, address, username, type):
             """
             customer_object = get_customer_object(username, connection)
             field_agent_connector = get_connection_object_for_field_agent(username)
-            add_message_to_the_database(username,customer_object.connected_field_agent.username,msg_from_client_decoded)
+            sender_id = get_customer_id(username); 
+            reciever_id = get_field_agent_id(customer_object.connected_field_agent.username)
+            values = (msg_id,sender_id,reciever_id,timestamp,msg_from_client_decoded)
+            add_message_to_the_database(values)
             if field_agent_connector is not None:
                 send_message_to_field_agent(field_agent_connector,username,msg_from_client_decoded)
 
